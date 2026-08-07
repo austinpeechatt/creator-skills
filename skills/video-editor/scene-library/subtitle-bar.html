@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>subtitle-bar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .sub-wrap {
+    position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px);
+    max-width: 1200px; padding: 26px 44px;
+    background: rgba(16,22,38,0.68);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    text-align: center;
+    opacity: 0; transition: opacity 500ms ease, transform 500ms cubic-bezier(.2,.7,.2,1);
+  }
+  .sub-wrap.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .sub-text {
+    font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2;
+    color: #f6f9ff;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.5);
+  }
+  .sub-text .hl {
+    background: linear-gradient(135deg,#8baeeb 0%,#b5d0f4 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub-text .dim { color: rgba(246,249,255,0.55); font-weight: 600; }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="sub-wrap" id="wrap">
+    <div class="sub-text" id="text"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const el = document.getElementById('text');
+    // Supports either plain text OR {segments: [{text, style}]} where style in ["normal","hl","dim"]
+    if (Array.isArray(P.segments)) {
+      el.innerHTML = P.segments.map(s => {
+        const cls = s.style && s.style !== "normal" ? s.style : "";
+        return `<span class="${cls}">${(s.text || "").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`;
+      }).join(" ");
+    } else {
+      el.textContent = P.text || '';
+    }
+    setTimeout(() => document.getElementById('wrap').classList.add('visible'), 80);
+    await document.fonts.ready;
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>stat-callout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .stat-card {
+    position: absolute;
+    width: 520px;
+    padding: 44px 48px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .stat-card .eyebrow {
+    font-size: 18px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--aw-primary); opacity: 0.85;
+  }
+  .stat-card .number {
+    font-size: 148px; font-weight: 800; line-height: 0.95;
+    letter-spacing: -0.045em;
+    background: var(--aw-gradient-primary);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stat-card .label {
+    font-size: 32px; font-weight: 600; color: var(--aw-text-dark); letter-spacing: -0.01em;
+  }
+  .stat-card .sub {
+    font-size: 20px; color: rgba(10,20,40,0.62); font-weight: 500; margin-top: 4px;
+  }
+  .layout-A.side-left .stat-card { left: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-A.side-right .stat-card { right: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-B .stat-card { left: 80px; top: 50%; transform: translateY(-50%); width: 900px; }
+  .layout-B .stat-card .number { font-size: 240px; }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="stat-card card enter" id="card">
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="number" id="number"></div>
+    <div class="label" id="label"></div>
+    <div class="sub" id="sub"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const stage = document.getElementById('stage');
+    stage.classList.add('layout-' + (P.layout || 'A'));
+    if ((P.layout || 'A') === 'A') stage.classList.add('side-' + (P.side || 'right'));
+    document.getElementById('eyebrow').textContent = P.eyebrow || '';
+    document.getElementById('number').textContent = P.number || '';
+    document.getElementById('label').textContent  = P.label || '';
+    document.getElementById('sub').textContent    = P.sub || '';
+    await document.fonts.ready;
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

@@ -1,0 +1,440 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>video-editor · timeline</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --panel: #121826;
+    --panel-2: #1a2234;
+    --border: #243047;
+    --text: #e6edf7;
+    --muted: #8b99b2;
+    --accent: #4f88ff;
+    --accent-soft: #1e2d54;
+    --danger: #ff6b6b;
+    --ok: #10b981;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+  .app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr; height: 100%; }
+  .topbar { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .topbar .title { font-weight: 700; letter-spacing: -0.01em; }
+  .topbar .source { margin-left: 8px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 11px; }
+  .topbar .spacer { flex: 1; }
+  button { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); }
+  button.primary:hover { filter: brightness(1.1); }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .video-wrap { background: #000; padding: 12px 14px 0; }
+  video { width: 100%; max-height: 52vh; background: #000; display: block; border: 1px solid var(--border); }
+  .transport { display: flex; gap: 8px; align-items: center; padding: 8px 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .transport .time { font-size: 12px; }
+
+  .timeline-wrap { flex: 1; overflow: auto; padding: 10px 14px 14px; min-height: 260px; }
+  .timeline {
+    position: relative; width: 100%; height: 230px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden;
+  }
+  .tl-ruler {
+    position: absolute; top: 0; left: 0; right: 0; height: 22px;
+    border-bottom: 1px solid var(--border); background: var(--panel-2);
+    color: var(--muted); font-size: 10px;
+  }
+  .tl-ruler .tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border); padding-left: 4px; color: var(--muted); }
+  .tl-waveform { position: absolute; top: 22px; left: 0; right: 0; height: 38px; border-bottom: 1px solid var(--border); opacity: 0.6; }
+  .tl-track {
+    position: absolute; top: 60px; left: 0; right: 0; bottom: 0;
+  }
+  .tl-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); z-index: 10; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.35); }
+
+  .beat {
+    position: absolute; height: 54px;
+    background: linear-gradient(180deg, #2a3a5f, #1c2742);
+    border: 1px solid #3a5590; border-radius: 4px;
+    color: var(--text); padding: 6px 8px; overflow: hidden;
+    cursor: grab; user-select: none; transition: border-color 80ms, transform 80ms;
+  }
+  .beat.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,136,255,0.25); }
+  .beat .b-id { font-weight: 700; font-size: 11px; }
+  .beat .b-template { font-size: 11px; color: var(--muted); }
+  .beat .b-label { font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .beat .handle { position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize; background: rgba(255,255,255,0.06); }
+  .beat .handle.left { left: 0; border-right: 1px solid rgba(255,255,255,0.12); }
+  .beat .handle.right { right: 0; border-left: 1px solid rgba(255,255,255,0.12); }
+
+  .beat[data-template="stat-callout"] { background: linear-gradient(180deg,#2e4577,#1d2c50); }
+  .beat[data-template="text-callout"] { background: linear-gradient(180deg,#3d2a5a,#241640); }
+  .beat[data-template="list-build"]   { background: linear-gradient(180deg,#204a3a,#11301f); }
+  .beat[data-template="comparison"]   { background: linear-gradient(180deg,#5a3a2a,#3a1f14); }
+  .beat[data-template="code-beat"]    { background: linear-gradient(180deg,#1f3a4a,#0f242e); }
+  .beat[data-template="end-card"]     { background: linear-gradient(180deg,#4a3255,#29193b); }
+  .beat[data-template="quote-card"]   { background: linear-gradient(180deg,#55432a,#322517); }
+
+  /* Side panel */
+  .side { background: var(--panel); border-left: 1px solid var(--border); overflow: auto; padding: 12px; }
+  .side h3 { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .side .row { margin-bottom: 10px; }
+  .side label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .side input[type="text"], .side input[type="number"], .side select, .side textarea {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 5px 7px; border-radius: 4px; font: inherit;
+  }
+  .side textarea { font-family: "SF Mono", Menlo, monospace; min-height: 180px; white-space: pre; }
+  .side .side-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .side .rationale { color: var(--muted); font-style: italic; font-size: 11px; }
+  .side .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* status bar */
+  .status { position: fixed; right: 12px; bottom: 12px; background: var(--panel-2); border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; max-width: 520px; max-height: 40vh; overflow: auto; font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: var(--muted); white-space: pre-wrap; display: none; }
+  .status.show { display: block; }
+  .pill { display: inline-block; padding: 2px 6px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); font-size: 10px; margin-left: 6px; }
+
+  .empty { color: var(--muted); font-size: 12px; padding: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="title">video-editor timeline</div>
+    <div class="source" id="source-label">loading…</div>
+    <label style="display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;">
+      <input type="checkbox" id="use-raw"/> raw (no overlays)
+    </label>
+    <div class="spacer"></div>
+    <button id="btn-add">+ add beat</button>
+    <button id="btn-delete" class="ghost">delete</button>
+    <button id="btn-save">save beats.yaml</button>
+    <button id="btn-render-sel" class="primary">re-render selected</button>
+    <button id="btn-render-all">re-render all</button>
+    <button id="btn-reload" class="ghost">reload</button>
+  </div>
+
+  <div class="main">
+    <div class="video-wrap">
+      <video id="video" controls preload="auto"></video>
+    </div>
+    <div class="transport">
+      <span class="time" id="time">0:00.00 / 0:00.00</span>
+      <span class="pill" id="status-pill" style="display:none;">rendering…</span>
+    </div>
+    <div class="timeline-wrap">
+      <div class="timeline" id="timeline">
+        <div class="tl-ruler" id="ruler"></div>
+        <div class="tl-track" id="track"></div>
+        <div class="tl-playhead" id="playhead"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side" id="side">
+    <div class="empty">Select a beat to edit.</div>
+  </div>
+</div>
+
+<div class="status" id="status"></div>
+
+<script>
+let STATE = { beats: [], duration: 300, videos: {}, selectedId: null, dirty: false };
+const TEMPLATES = ["stat-callout","text-callout","list-build","quote-card","code-beat","comparison","end-card"];
+
+const $ = (s) => document.querySelector(s);
+const video = $("#video");
+const timeline = $("#timeline");
+const track = $("#track");
+const ruler = $("#ruler");
+const playhead = $("#playhead");
+const side = $("#side");
+const statusEl = $("#status");
+const statusPill = $("#status-pill");
+
+function fmt(t) {
+  if (!isFinite(t)) return "0:00.00";
+  const m = Math.floor(t / 60);
+  const s = (t % 60).toFixed(2).padStart(5, "0");
+  return `${m}:${s}`;
+}
+
+async function loadState(preferRaw=false) {
+  const r = await fetch("/api/state"); const s = await r.json();
+  STATE.beats = (s.beats || []).map(b => ({ ...b }));
+  STATE.videos = s.videos || {};
+  STATE.duration = s.duration || 300;
+  STATE.version = s.version || 1;
+  const useRaw = $("#use-raw").checked || !STATE.videos.final;
+  const src = useRaw ? STATE.videos.raw : STATE.videos.final;
+  $("#source-label").textContent = useRaw ? "raw.mp4" : `final.mp4 (${STATE.videos.finalVersion || "?"})`;
+  if (src && video.src !== location.origin + src) {
+    video.src = src + "?t=" + Date.now();
+  }
+  STATE.dirty = false;
+  render();
+}
+
+function pxPerSec() {
+  return (timeline.clientWidth - 0) / STATE.duration;
+}
+
+function render() {
+  // ruler
+  ruler.innerHTML = "";
+  const pps = pxPerSec();
+  let step = 30;
+  if (STATE.duration > 600) step = 60;
+  else if (STATE.duration < 120) step = 10;
+  for (let t = 0; t <= STATE.duration; t += step) {
+    const tick = document.createElement("div");
+    tick.className = "tick"; tick.style.left = (t * pps) + "px";
+    tick.textContent = fmt(t);
+    ruler.appendChild(tick);
+  }
+
+  // beats
+  track.innerHTML = "";
+  STATE.beats.sort((a,b) => a.start - b.start);
+  STATE.beats.forEach((b, idx) => {
+    const el = document.createElement("div");
+    el.className = "beat"; el.dataset.id = b.id; el.dataset.template = b.template;
+    if (STATE.selectedId === b.id) el.classList.add("selected");
+    const left = b.start * pps;
+    const width = Math.max(20, (b.end - b.start) * pps);
+    el.style.left = left + "px";
+    el.style.width = width + "px";
+    el.style.top = (10 + (idx % 3) * 58) + "px"; // stagger in 3 rows
+
+    const label = shortLabel(b);
+    el.innerHTML = `
+      <div class="handle left"></div>
+      <div class="b-id">#${b.id} · ${b.template} · ${b.layout}${b.side ? "/"+b.side : ""}</div>
+      <div class="b-label">${escapeHtml(label)}</div>
+      <div class="handle right"></div>`;
+    el.addEventListener("mousedown", (e) => onBeatMouseDown(e, b));
+    el.addEventListener("click", (e) => { e.stopPropagation(); selectBeat(b.id); });
+    track.appendChild(el);
+  });
+
+  updatePlayhead();
+  renderSide();
+}
+
+function shortLabel(b) {
+  const p = b.props || {};
+  return p.text || p.number || p.headline || p.title || p.quote || (p.rows && p.rows.map(r => r.cmd).join(" | ")) || (p.items && p.items.map(i => i.text).join(" · ")) || p.cta || "";
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function selectBeat(id) {
+  STATE.selectedId = id;
+  const b = STATE.beats.find(x => x.id === id);
+  if (b) video.currentTime = Math.max(0, b.start);
+  render();
+}
+
+function updatePlayhead() {
+  const pps = pxPerSec();
+  playhead.style.left = (video.currentTime * pps) + "px";
+  $("#time").textContent = `${fmt(video.currentTime)} / ${fmt(STATE.duration)}`;
+}
+
+video.addEventListener("timeupdate", updatePlayhead);
+video.addEventListener("loadedmetadata", () => {
+  if (!STATE.duration || STATE.duration < 1) STATE.duration = video.duration;
+  render();
+});
+
+timeline.addEventListener("click", (e) => {
+  if (e.target.closest(".beat")) return;
+  const rect = timeline.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  video.currentTime = Math.max(0, Math.min(STATE.duration, x / pxPerSec()));
+});
+
+function onBeatMouseDown(e, b) {
+  const targetClass = e.target.classList;
+  const isLeft = targetClass.contains("handle") && targetClass.contains("left");
+  const isRight = targetClass.contains("handle") && targetClass.contains("right");
+  const mode = isLeft ? "resize-left" : isRight ? "resize-right" : "move";
+  const pps = pxPerSec();
+  const startX = e.clientX;
+  const startStart = b.start, startEnd = b.end;
+  selectBeat(b.id);
+  e.preventDefault();
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    const dt = dx / pps;
+    if (mode === "move") {
+      const dur = startEnd - startStart;
+      b.start = Math.max(0, Math.min(STATE.duration - dur, startStart + dt));
+      b.end = b.start + dur;
+    } else if (mode === "resize-left") {
+      b.start = Math.max(0, Math.min(b.end - 0.5, startStart + dt));
+    } else if (mode === "resize-right") {
+      b.end = Math.max(b.start + 0.5, Math.min(STATE.duration, startEnd + dt));
+    }
+    STATE.dirty = true;
+    render();
+  }
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+  }
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+function renderSide() {
+  const b = STATE.beats.find(x => x.id === STATE.selectedId);
+  if (!b) { side.innerHTML = `<div class="empty">Select a beat to edit.</div>`; return; }
+  const propsYaml = toPrettyJson(b.props || {});
+  side.innerHTML = `
+    <h3>beat #${b.id}</h3>
+    <div class="row row2">
+      <div><label>start (s)</label><input type="number" step="0.01" id="f-start" value="${b.start.toFixed(2)}"></div>
+      <div><label>end (s)</label><input type="number" step="0.01" id="f-end" value="${b.end.toFixed(2)}"></div>
+    </div>
+    <div class="row row2">
+      <div><label>template</label>
+        <select id="f-template">${TEMPLATES.map(t => `<option ${t===b.template?"selected":""}>${t}</option>`).join("")}</select>
+      </div>
+      <div><label>layout</label>
+        <select id="f-layout"><option ${b.layout==='A'?'selected':''}>A</option><option ${b.layout==='B'?'selected':''}>B</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <label>side (layout A only)</label>
+      <select id="f-side"><option value="">—</option><option value="left" ${b.side==='left'?'selected':''}>left</option><option value="right" ${b.side==='right'?'selected':''}>right</option></select>
+    </div>
+    <div class="row">
+      <label>props (JSON — edit freely)</label>
+      <textarea id="f-props" spellcheck="false">${escapeHtml(propsYaml)}</textarea>
+    </div>
+    <div class="row">
+      <label>rationale</label>
+      <input type="text" id="f-rationale" value="${escapeHtml(b.rationale || "")}"/>
+    </div>
+    <div class="side-actions">
+      <button id="f-apply" class="primary">apply</button>
+      <button id="f-seek">seek to start</button>
+      <button id="f-render" class="ghost">re-render just this beat</button>
+    </div>
+    ${b.rationale ? `<div class="rationale" style="margin-top:10px;">${escapeHtml(b.rationale)}</div>` : ""}
+  `;
+  $("#f-apply").addEventListener("click", () => applyPanel(b));
+  $("#f-seek").addEventListener("click", () => { video.currentTime = b.start; });
+  $("#f-render").addEventListener("click", () => renderOnly([b.id]));
+}
+
+function toPrettyJson(o) { return JSON.stringify(o, null, 2); }
+
+function applyPanel(b) {
+  try {
+    const props = JSON.parse($("#f-props").value);
+    b.start = parseFloat($("#f-start").value);
+    b.end = parseFloat($("#f-end").value);
+    b.template = $("#f-template").value;
+    b.layout = $("#f-layout").value;
+    const side = $("#f-side").value; b.side = side || undefined;
+    b.props = props;
+    b.rationale = $("#f-rationale").value;
+    STATE.dirty = true;
+    render();
+  } catch (e) {
+    alert("props JSON invalid: " + e.message);
+  }
+}
+
+$("#btn-add").addEventListener("click", () => {
+  const maxId = STATE.beats.reduce((m,b) => Math.max(m, b.id), 0);
+  const t = video.currentTime || 0;
+  const nb = { id: maxId + 1, start: t, end: t + 4, template: "text-callout", layout: "B", props: { text: "New beat" } };
+  STATE.beats.push(nb);
+  STATE.selectedId = nb.id; STATE.dirty = true;
+  render();
+});
+
+$("#btn-delete").addEventListener("click", () => {
+  if (!STATE.selectedId) return;
+  if (!confirm("Delete beat #" + STATE.selectedId + "?")) return;
+  STATE.beats = STATE.beats.filter(b => b.id !== STATE.selectedId);
+  STATE.selectedId = null; STATE.dirty = true;
+  render();
+});
+
+$("#btn-save").addEventListener("click", saveBeats);
+
+$("#btn-render-sel").addEventListener("click", async () => {
+  if (!STATE.selectedId) { alert("select a beat first"); return; }
+  await saveBeats();
+  renderOnly([STATE.selectedId]);
+});
+$("#btn-render-all").addEventListener("click", async () => {
+  await saveBeats();
+  renderOnly([]);
+});
+$("#btn-reload").addEventListener("click", () => loadState());
+$("#use-raw").addEventListener("change", () => loadState());
+
+async function saveBeats() {
+  const body = JSON.stringify({ version: STATE.version || 1, beats: STATE.beats });
+  const r = await fetch("/api/beats", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+  if (!r.ok) { alert("save failed"); return false; }
+  STATE.dirty = false;
+  flashStatus("saved beats.yaml");
+  return true;
+}
+
+async function renderOnly(ids) {
+  const r = await fetch("/api/render", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ only: ids }) });
+  if (!r.ok) { alert("render trigger failed"); return; }
+  statusPill.style.display = "inline-block";
+  statusEl.classList.add("show");
+  const poll = async () => {
+    const lr = await fetch("/api/render/log"); const j = await lr.json();
+    statusEl.textContent = (j.log || []).join("\n");
+    statusEl.scrollTop = statusEl.scrollHeight;
+    const done = (j.log || []).some(l => l.startsWith("[done]") || l.includes("FAILED"));
+    if (!done) setTimeout(poll, 1000);
+    else {
+      statusPill.style.display = "none";
+      setTimeout(() => loadState(), 500);
+    }
+  };
+  poll();
+}
+
+function flashStatus(msg) {
+  const prev = statusEl.textContent;
+  statusEl.classList.add("show");
+  statusEl.textContent = msg;
+  setTimeout(() => { if (statusEl.textContent === msg) statusEl.classList.remove("show"); }, 1500);
+}
+
+window.addEventListener("resize", render);
+window.addEventListener("keydown", (e) => {
+  if (e.key === " " && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "SELECT") {
+    e.preventDefault();
+    if (video.paused) video.play(); else video.pause();
+  }
+  if (e.key === "Delete" || e.key === "Backspace") {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (STATE.selectedId) { e.preventDefault(); $("#btn-delete").click(); }
+  }
+});
+window.addEventListener("beforeunload", (e) => {
+  if (STATE.dirty) { e.preventDefault(); e.returnValue = ""; }
+});
+
+loadState();
+</script>
+</body>
+</html>

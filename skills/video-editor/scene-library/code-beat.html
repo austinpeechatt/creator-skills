@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>code-beat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .term-card {
+    position: absolute;
+    width: 660px;
+    padding: 28px 32px 32px;
+    background: rgba(10,20,40,0.88);
+    color: var(--aw-text-light);
+    border: 1px solid rgba(139,174,235,0.18);
+    border-radius: var(--aw-radius);
+    box-shadow: 0 22px 60px rgba(10,20,40,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+    font-family: 'JetBrains Mono', monospace;
+    backdrop-filter: blur(16px);
+  }
+  .term-card .bar {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .term-card .bar span {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: rgba(255,255,255,0.22);
+  }
+  .term-card .bar span:nth-child(1) { background: #ff5f57; }
+  .term-card .bar span:nth-child(2) { background: #febc2e; }
+  .term-card .bar span:nth-child(3) { background: #28c840; }
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 22px; font-weight: 600;
+    padding: 9px 0;
+    opacity: 0; transform: translateX(-10px);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  .row.in { opacity: 1; transform: translateX(0); }
+  .row .prompt { color: var(--aw-blue-soft); }
+  .row .cmd    { color: #dfe7f5; }
+  .row .tick   { color: #28c840; font-size: 22px; opacity: 0; transition: opacity 200ms ease; }
+  .row.done .tick { opacity: 1; }
+  .row.done .cmd  { color: rgba(223,231,245,0.65); }
+  .layout-A.side-right .term-card { right: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-A.side-left  .term-card { left: 80px;  top: 50%; transform: translateY(-50%); }
+  .layout-B .term-card { left: 80px; top: 50%; transform: translateY(-50%); width: 1080px; }
+  .layout-B .row { font-size: 30px; padding: 12px 0; }
+</style></head>
+<body>
+<div class="stage enter" id="stage">
+  <div class="term-card" id="card">
+    <div class="bar"><span></span><span></span><span></span></div>
+    <div id="rows"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const stage = document.getElementById('stage');
+    stage.classList.add('layout-' + (P.layout || 'A'));
+    if ((P.layout || 'A') === 'A') stage.classList.add('side-' + (P.side || 'right'));
+    const rows = P.rows || [];
+    const beatStart = P.beat_start_ms || 0;
+    const host = document.getElementById('rows');
+    rows.forEach(r => {
+      const el = document.createElement('div'); el.className = 'row';
+      el.innerHTML = `<span class="prompt">$</span><span class="cmd"></span><span class="tick">✓</span>`;
+      el.querySelector('.cmd').textContent = r.cmd || r.text || '';
+      el.dataset.at   = (r.appear_ms  != null ? r.appear_ms  - beatStart : 0);
+      el.dataset.done = (r.done_ms    != null ? r.done_ms    - beatStart : (r.appear_ms ? r.appear_ms - beatStart + 600 : 600));
+      host.appendChild(el);
+    });
+    await document.fonts.ready;
+    const start = performance.now();
+    function tick() {
+      const t = performance.now() - start;
+      host.querySelectorAll('.row').forEach(el => {
+        if (t >= +el.dataset.at) el.classList.add('in');
+        if (t >= +el.dataset.done) el.classList.add('done');
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

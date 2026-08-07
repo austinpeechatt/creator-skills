@@ -1,0 +1,79 @@
+:root {
+  --aw-primary: #386cda;
+  --aw-blue-mid: #618de2;
+  --aw-blue-soft: #8baeeb;
+  --aw-blue-pale: #b5d0f4;
+  --aw-bg-light: #f9f8fd;
+  --aw-bg-dark: #0a1428;
+  --aw-text-dark: #0a1428;
+  --aw-text-light: #f9f8fd;
+  --aw-gradient: linear-gradient(135deg, #618de2 0%, #8baeeb 100%);
+  --aw-gradient-primary: linear-gradient(135deg, #386cda 0%, #618de2 100%);
+  --aw-radius: 16px;
+  --aw-radius-sm: 8px;
+  --aw-shadow: 0 20px 60px rgba(10,20,40,0.25);
+  --aw-shadow-sm: 0 8px 24px rgba(10,20,40,0.18);
+  --aw-glass-light: rgba(255,255,255,0.72);
+  --aw-glass-dark: rgba(10,20,40,0.55);
+  --aw-border-light: 1px solid rgba(255,255,255,0.5);
+  --aw-border-dark: 1px solid rgba(255,255,255,0.12);
+  --aw-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --aw-track-tight: -0.03em;
+  --aw-track-med: -0.02em;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--aw-font);
+  letter-spacing: var(--aw-track-tight);
+  color: var(--aw-text-dark);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01','ss02','cv11';
+}
+
+.stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+}
+
+.card {
+  background: var(--aw-glass-light);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: var(--aw-border-light);
+  border-radius: var(--aw-radius);
+  box-shadow: var(--aw-shadow);
+  padding: 32px 40px;
+}
+
+.card.dark {
+  background: var(--aw-glass-dark);
+  border: var(--aw-border-dark);
+  color: var(--aw-text-light);
+}
+
+.enter {
+  opacity: 0;
+  animation: awEnter 300ms cubic-bezier(.2,.7,.2,1) forwards;
+}
+.exit {
+  animation: awExit 200ms ease forwards;
+}
+@keyframes awEnter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes awExit {
+  to { opacity: 0; }
+}
+
+.pip-slot-a-left { position: absolute; left: 80px; top: 50%; transform: translateY(-50%); }
+.pip-slot-a-right { position: absolute; right: 80px; top: 50%; transform: translateY(-50%); }
+.pip-slot-b-fullstage { position: absolute; left: 80px; top: 80px; right: 360px; bottom: 80px; }

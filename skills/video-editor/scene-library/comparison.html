@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .pair {
+    position: absolute; display: flex; gap: 24px;
+    width: 820px; flex-direction: column;
+  }
+  .side {
+    padding: 28px 32px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .side .tag {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .side.before .tag { color: #b0455e; }
+  .side.after  .tag { color: var(--aw-primary); }
+  .side .tag::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+  }
+  .side .headline {
+    font-size: 32px; font-weight: 700; letter-spacing: -0.02em; color: var(--aw-text-dark);
+  }
+  .side .detail {
+    font-size: 20px; font-weight: 500; color: rgba(10,20,40,0.65); line-height: 1.35;
+  }
+  .side.after {
+    background: linear-gradient(135deg, rgba(56,108,218,0.12), rgba(139,174,235,0.08));
+    border: 1px solid rgba(56,108,218,0.22);
+  }
+  .arrow {
+    align-self: center; font-size: 32px; color: var(--aw-primary); font-weight: 800;
+  }
+  .layout-A.side-right .pair { right: 80px; top: 50%; transform: translateY(-50%); width: 560px; }
+  .layout-A.side-left  .pair { left: 80px;  top: 50%; transform: translateY(-50%); width: 560px; }
+  .layout-A .side .headline { font-size: 26px; }
+  .layout-A .side .detail   { font-size: 17px; }
+  .layout-B .pair { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 1500px; flex-direction: row; }
+  .layout-B .side { flex: 1; }
+  .layout-B .arrow { font-size: 48px; }
+</style></head>
+<body>
+<div class="stage enter" id="stage">
+  <div class="pair">
+    <div class="side before card" id="before">
+      <div class="tag">Before</div>
+      <div class="headline" id="bh"></div>
+      <div class="detail"  id="bd"></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="side after card" id="after">
+      <div class="tag">After</div>
+      <div class="headline" id="ah"></div>
+      <div class="detail"  id="ad"></div>
+    </div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const stage = document.getElementById('stage');
+    stage.classList.add('layout-' + (P.layout || 'A'));
+    if ((P.layout || 'A') === 'A') stage.classList.add('side-' + (P.side || 'right'));
+    document.getElementById('bh').textContent = (P.before && P.before.headline) || '';
+    document.getElementById('bd').textContent = (P.before && P.before.detail) || '';
+    document.getElementById('ah').textContent = (P.after && P.after.headline) || '';
+    document.getElementById('ad').textContent = (P.after && P.after.detail) || '';
+    document.querySelectorAll('.side.before .tag')[0].childNodes[1] && (document.querySelectorAll('.side.before .tag')[0].lastChild.textContent = P.before_label || 'Before');
+    if (P.before_label) document.querySelector('.side.before .tag').innerHTML = document.querySelector('.side.before .tag').innerHTML.replace('Before', P.before_label);
+    if (P.after_label)  document.querySelector('.side.after .tag').innerHTML  = document.querySelector('.side.after .tag').innerHTML.replace('After', P.after_label);
+    await document.fonts.ready;
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

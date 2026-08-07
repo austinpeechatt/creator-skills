@@ -1,0 +1,26 @@
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*credentials*
+*secret*
+
+# Local state
+posts.json
+posts.archive*
+jobs/
+workspace/
+output/
+runs/
+
+# Personal media
+assets/headshots/*
+!assets/headshots/README.md
+
+# Deps / build
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,87 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>dual-card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .dual {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 520px; padding: 36px 40px;
+    display: flex; flex-direction: column; gap: 14px;
+    opacity: 0; transform-origin: center; transform: translateY(-50%) translateX(-20px);
+    transition: opacity 600ms ease, transform 600ms cubic-bezier(.2,.7,.2,1);
+  }
+  .dual.right { transform: translateY(-50%) translateX(20px); }
+  .dual.visible { opacity: 1; transform: translateY(-50%) translateX(0); }
+  .dual.left  { left: 60px; }
+  .dual.right { right: 60px; }
+
+  .dual .brand { display: flex; align-items: center; gap: 10px; }
+  .dual .star {
+    width: 28px; height: 28px; display: inline-block;
+    background: conic-gradient(from 0deg, #ff8c42, #ffb070, #ff8c42);
+    -webkit-mask: radial-gradient(circle, black 10%, transparent 12%),
+                  repeating-conic-gradient(black 0deg 10deg, transparent 10deg 20deg);
+            mask: radial-gradient(circle, black 10%, transparent 12%),
+                  repeating-conic-gradient(black 0deg 10deg, transparent 10deg 20deg);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #ff9a4d 0%, #e8762b 80%);
+  }
+  .dual .eyebrow {
+    font-size: 16px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(10,20,40,0.55);
+  }
+  .dual .title {
+    font-size: 64px; font-weight: 800; line-height: 1.02;
+    letter-spacing: -0.038em; color: var(--aw-text-dark);
+  }
+  .dual .accent {
+    font-size: 64px; font-weight: 800; line-height: 1.02;
+    letter-spacing: -0.038em;
+    background: var(--aw-gradient-primary);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .dual .rule {
+    width: 64px; height: 3px; border-radius: 2px;
+    background: var(--aw-gradient-primary); margin-top: 6px;
+  }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="dual card left" id="left">
+    <div class="brand"><span class="star"></span><span class="eyebrow" id="left-eyebrow"></span></div>
+    <div class="title" id="left-title"></div>
+    <div class="accent" id="left-accent"></div>
+    <div class="rule"></div>
+  </div>
+  <div class="dual card right" id="right">
+    <div class="brand"><span class="star"></span><span class="eyebrow" id="right-eyebrow"></span></div>
+    <div class="title" id="right-title"></div>
+    <div class="accent" id="right-accent"></div>
+    <div class="rule"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const L = P.left || {}, R = P.right || {};
+    const leftEl = document.getElementById('left');
+    const rightEl = document.getElementById('right');
+    document.getElementById('left-eyebrow').textContent  = L.eyebrow || '';
+    document.getElementById('left-title').textContent    = L.title || '';
+    document.getElementById('left-accent').textContent   = L.accent || '';
+    document.getElementById('right-eyebrow').textContent = R.eyebrow || '';
+    document.getElementById('right-title').textContent   = R.title || '';
+    document.getElementById('right-accent').textContent  = R.accent || '';
+    if (L.title || L.eyebrow) {
+      setTimeout(() => leftEl.classList.add('visible'), (L.appear_ms || 0));
+    } else { leftEl.style.display = 'none'; }
+    if (R.title || R.eyebrow) {
+      setTimeout(() => rightEl.classList.add('visible'), (R.appear_ms || 600));
+    } else { rightEl.style.display = 'none'; }
+    await document.fonts.ready;
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

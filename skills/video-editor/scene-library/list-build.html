@@ -1,0 +1,76 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>list-build</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .list-card {
+    position: absolute; width: 580px; padding: 36px 44px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .list-card .title {
+    font-size: 22px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--aw-primary);
+    margin-bottom: 4px;
+  }
+  .item {
+    display: flex; align-items: center; gap: 18px;
+    font-size: 30px; font-weight: 600; color: var(--aw-text-dark);
+    letter-spacing: -0.015em;
+    opacity: 0; transform: translateX(-12px);
+    transition: opacity 300ms ease, transform 300ms ease;
+  }
+  .item.in { opacity: 1; transform: translateX(0); }
+  .check {
+    flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px;
+    background: var(--aw-gradient-primary);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(56,108,218,0.35);
+  }
+  .check svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+  .layout-A.side-right .list-card { right: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-A.side-left  .list-card { left: 80px;  top: 50%; transform: translateY(-50%); }
+  .layout-B .list-card { left: 80px; top: 50%; transform: translateY(-50%); width: 1000px; }
+  .layout-B .item { font-size: 44px; }
+  .layout-B .check { flex-basis: 56px; width: 56px; height: 56px; border-radius: 16px; }
+  .layout-B .check svg { width: 30px; height: 30px; }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="list-card card enter" id="card">
+    <div class="title" id="title"></div>
+    <div id="items"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const stage = document.getElementById('stage');
+    stage.classList.add('layout-' + (P.layout || 'A'));
+    if ((P.layout || 'A') === 'A') stage.classList.add('side-' + (P.side || 'right'));
+    document.getElementById('title').textContent = P.title || '';
+    const host = document.getElementById('items');
+    const items = P.items || [];
+    const beatStart = P.beat_start_ms || 0;
+    items.forEach((it) => {
+      const row = document.createElement('div'); row.className = 'item';
+      row.innerHTML = `<div class="check"><svg viewBox="0 0 24 24"><polyline points="4,12 10,18 20,6"/></svg></div><div class="text"></div>`;
+      row.querySelector('.text').textContent = it.text;
+      row.dataset.at = (it.appear_ms != null ? it.appear_ms - beatStart : 0);
+      host.appendChild(row);
+    });
+    await document.fonts.ready;
+    const start = performance.now();
+    function tick() {
+      const t = performance.now() - start;
+      host.querySelectorAll('.item').forEach(el => {
+        if (t >= +el.dataset.at) el.classList.add('in');
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

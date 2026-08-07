@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>text-callout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .caption {
+    position: absolute;
+    padding: 28px 40px;
+    font-size: 56px; font-weight: 700;
+    letter-spacing: -0.025em; line-height: 1.15;
+    max-width: 640px;
+  }
+  .caption .w {
+    display: inline-block; transition: color 120ms ease, transform 120ms ease;
+    color: rgba(10,20,40,0.42);
+    margin-right: 14px;
+  }
+  .caption .w.hit {
+    color: var(--aw-primary);
+    transform: translateY(-2px);
+  }
+  .caption .w.emph { font-weight: 800; }
+  .layout-A.side-right .caption { right: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-A.side-left  .caption { left: 80px; top: 50%; transform: translateY(-50%); }
+  .layout-B .caption { left: 80px; top: 50%; transform: translateY(-50%); max-width: 1100px; font-size: 84px; }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="caption card enter" id="cap"></div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    const stage = document.getElementById('stage');
+    stage.classList.add('layout-' + (P.layout || 'A'));
+    if ((P.layout || 'A') === 'A') stage.classList.add('side-' + (P.side || 'right'));
+    const cap = document.getElementById('cap');
+    const words = P.words && P.words.length ? P.words : (P.text || '').split(/\s+/).map(t => ({text:t}));
+    const beatStart = (P.beat_start_ms || 0);
+    words.forEach((w, i) => {
+      const span = document.createElement('span');
+      span.className = 'w' + (w.emph ? ' emph' : '');
+      span.textContent = w.text;
+      span.dataset.start = (w.start_ms != null) ? (w.start_ms - beatStart) : -1;
+      span.dataset.end   = (w.end_ms   != null) ? (w.end_ms   - beatStart) : -1;
+      cap.appendChild(span);
+    });
+    await document.fonts.ready;
+    const start = performance.now();
+    function tick() {
+      const t = performance.now() - start;
+      cap.querySelectorAll('.w').forEach(el => {
+        const s = +el.dataset.start, e = +el.dataset.end;
+        if (s >= 0 && t >= s && t <= e + 400) el.classList.add('hit');
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    window.__READY__ = true;
+  });
+</script>
+</body></html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>process-flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../brand/tokens.css">
+<style>
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 70%, rgba(97,141,226,0.16), transparent 55%),
+      linear-gradient(135deg, #06101f 0%, #0a1830 60%, #0e2246 100%);
+  }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 120px 120px;
+    mask-image: radial-gradient(ellipse at 40% 50%, black 40%, transparent 80%);
+  }
+  .wrap {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    left: 90px; width: 960px;
+    display: flex; flex-direction: column; gap: 32px;
+  }
+  .eyebrow {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 20px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(181,208,244,0.9);
+  }
+  .eyebrow::before {
+    content: ""; width: 60px; height: 2px; border-radius: 2px;
+    background: var(--aw-gradient-primary);
+  }
+  .row { display: flex; align-items: center; gap: 18px; }
+  .node {
+    width: 200px; height: 168px;
+    background: rgba(16,22,38,0.55);
+    border: 1.5px solid rgba(155,185,240,0.35);
+    border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 24px 48px rgba(0,0,0,0.35);
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 450ms ease, transform 450ms cubic-bezier(.2,.7,.2,1);
+  }
+  .node.visible { opacity: 1; transform: translateY(0); }
+  .node .icon {
+    font-size: 54px; line-height: 1;
+    background: linear-gradient(135deg,#9ec5ff 0%,#b5d0f4 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 20px rgba(97,141,226,0.45);
+  }
+  .node .label {
+    font-size: 18px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(220,230,250,0.92);
+  }
+  .arrow {
+    color: rgba(155,185,240,0.55); font-size: 40px; line-height: 1;
+    opacity: 0; transition: opacity 400ms ease 150ms;
+  }
+  .arrow.visible { opacity: 1; }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="bg"></div><div class="grid"></div>
+  <div class="wrap">
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="row" id="row"></div>
+  </div>
+</div>
+<script>
+  window.__READY__ = false;
+  window.addEventListener('load', async () => {
+    const P = window.__PROPS__ || {};
+    document.getElementById('eyebrow').textContent = P.eyebrow || 'HOW IT WORKS';
+    const nodes = (P.nodes || []).slice(0, 4);
+    const row = document.getElementById('row');
+    nodes.forEach((n, i) => {
+      const d = document.createElement('div');
+      d.className = 'node';
+      d.innerHTML = `<div class="icon">${n.icon || '&#9632;'}</div><div class="label">${(n.label||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</div>`;
+      row.appendChild(d);
+      setTimeout(() => d.classList.add('visible'), n.appear_ms != null ? n.appear_ms : i * 600);
+      if (i < nodes.length - 1) {
+        const a = document.createElement('div');
+        a.className = 'arrow'; a.textContent = '→';
+        row.appendChild(a);
+        setTimeout(() => a.classList.add('visible'), (n.appear_ms != null ? n.appear_ms : i * 600) + 250);
+      }
+    });
+    await document.fonts.ready;
+    window.__READY__ = true;
+  });
+</script>
+</body></html>
