@@ -1,7 +1,7 @@
 # Creator Skills for Claude Code
 
-Six Claude Code skills that run a YouTube channel: idea capture, diagrams,
-editing, shorts, carousel-grade graphics, thumbnails, and scheduling.
+Seven Claude Code skills that run a YouTube channel: idea capture, diagrams,
+editing, shorts, carousels, thumbnails, and scheduling.
 
 These are the actual skills behind [@austinpeechatt](https://www.youtube.com/@austinpeechatt) —
 not a demo repo. They're published as-is so you can read them, run them, and
@@ -10,10 +10,10 @@ rip out the parts you want.
 ## The pipeline
 
 ```
-idea  →  diagram  →  record  →  edit  →  clip  →  package  →  publish
-  │         │                    │        │         │           │
-notion-  excalidraw-          video-  finish-  youtube-    buffer-
- brain     diagram            editor   shorts  thumbnail  scheduler
+idea  →  diagram  →  record  →  edit  →  clip  →  repurpose  →  package  →  publish
+  │         │                    │        │          │            │           │
+notion-  excalidraw-          video-  finish-   graphic-     youtube-    buffer-
+ brain     diagram            editor   shorts   carousel    thumbnail  scheduler
 ```
 
 | Skill | What it does |
@@ -22,6 +22,7 @@ notion-  excalidraw-          video-  finish-  youtube-    buffer-
 | [`excalidraw-diagram`](skills/excalidraw-diagram) | Generates editable Excalidraw diagrams from a prompt. Ask for eight concepts, delete six — recognising the right one is faster than describing it. |
 | [`video-editor`](skills/video-editor) | Transcribes a talking-head take, cuts filler and dead air, then places motion-graphic overlays on exact phrases. Knows when you're on camera versus sharing a screen, and never covers your face. |
 | [`finish-shorts`](skills/finish-shorts) | Takes a finished long-form and batches out vertical shorts — picks the moments, plans the graphics, renders each one. |
+| [`graphic-carousel`](skills/graphic-carousel) | Turns a topic or a video into a designed Instagram carousel — three house styles, brand palette and voice baked in, exported as post-ready 1080×1350 PNGs. Needs [open-carrusel](https://github.com/FrancescoXX/open-carrusel) for rendering. |
 | [`youtube-thumbnail`](skills/youtube-thumbnail) | Four thumbnail directions per run, plus a comparison grid. Built around style references rather than from scratch. |
 | [`buffer-scheduler`](skills/buffer-scheduler) | Schedules shorts to YouTube, Instagram and TikTok through Buffer, and health-checks the queue so failures don't sit unnoticed. |
 
@@ -30,7 +31,7 @@ notion-  excalidraw-          video-  finish-  youtube-    buffer-
 Skills live in a `skills/` folder that Claude Code reads. Drop in the whole set:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/creator-skills.git
+git clone https://github.com/austinpeechatt/creator-skills.git
 mkdir -p ~/.claude/skills
 cp -R creator-skills/skills/* ~/.claude/skills/
 ```
@@ -54,6 +55,7 @@ Nothing here needs all of it — set up only the skills you want.
 | `excalidraw-diagram` | Python 3, Playwright (for PNG rendering) |
 | `video-editor` | Python 3, FFmpeg, Playwright, an ElevenLabs key for Scribe |
 | `finish-shorts` | Same as `video-editor` |
+| `graphic-carousel` | Node 18+, Python 3, and a local [open-carrusel](https://github.com/FrancescoXX/open-carrusel) checkout — it does the rendering and PNG export |
 | `youtube-thumbnail` | Python 3, a Google AI Studio key. Renders cost about 4 cents each. |
 | `buffer-scheduler` | Node 18+, a Buffer account, and somewhere permanent to host video |
 
@@ -68,7 +70,17 @@ generic face.
 
 **Buffer re-fetches media at publish time.** A post scheduled for next week
 downloads its video next week. Temporary file hosts expire and your post fails
-quietly. Host somewhere permanent.
+quietly. Host somewhere permanent. This bites `graphic-carousel` specifically:
+its upload path still targets catbox.moe, which Buffer began rejecting in July
+2026. Repoint it at hosting you control before using the posting phase —
+generating and exporting slides is unaffected.
+
+**The carousel skill is brand-locked to mine.** Palette, fonts and logo marks
+are AI Waterside's. The three styles are the reusable part; swap the palette
+constants at the top of `seed_graphic_carousel.py` and the files in `assets/`
+for your own. It also doesn't render slides itself — it drives
+[open-carrusel](https://github.com/FrancescoXX/open-carrusel), which you'll need
+running locally.
 
 **Transcription uses two different tools on purpose.** A local Whisper build
 (`brew install whisper-cpp`) is fine for a fast transcript. The video editor
