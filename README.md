@@ -1,7 +1,7 @@
 # Creator Skills for Claude Code
 
-Seven Claude Code skills that run a YouTube channel: idea capture, diagrams,
-editing, shorts, carousels, thumbnails, and scheduling.
+Eight Claude Code skills that run a YouTube channel: idea capture, diagrams,
+recording, editing, shorts, carousels, thumbnails, and scheduling.
 
 These are the actual skills behind [@austinpeechatt](https://www.youtube.com/@austinpeechatt) —
 not a demo repo. They're published as-is so you can read them, run them, and
@@ -11,15 +11,16 @@ rip out the parts you want.
 
 ```
 idea  →  diagram  →  record  →  edit  →  clip  →  repurpose  →  package  →  publish
-  │         │                    │        │          │            │           │
-notion-  excalidraw-          video-  finish-   graphic-     youtube-    buffer-
- brain     diagram            editor   shorts   carousel    thumbnail  scheduler
+  │         │           │        │        │          │            │           │
+notion-  excalidraw- telepr-  video-  finish-   graphic-     youtube-    buffer-
+ brain     diagram    ompter  editor   shorts   carousel    thumbnail  scheduler
 ```
 
 | Skill | What it does |
 |---|---|
 | [`notion-brain`](skills/notion-brain) | Ramble at it, get a structured video idea in a Notion database. Ideas die when they don't have a home. |
 | [`excalidraw-diagram`](skills/excalidraw-diagram) | Generates editable Excalidraw diagrams from a prompt. Ask for eight concepts, delete six — recognising the right one is faster than describing it. |
+| [`teleprompter`](skills/teleprompter) | Paces a scripted voiceover on screen and records it off your mic in the same page — space starts the read and the take, space ends it. Built after a version that only ran a timer: if it looks like it records, it must record. |
 | [`video-editor`](skills/video-editor) | Transcribes a talking-head take, cuts filler and dead air, then places motion-graphic overlays on exact phrases. Knows when you're on camera versus sharing a screen, and never covers your face. |
 | [`finish-shorts`](skills/finish-shorts) | Takes a finished long-form and batches out vertical shorts — picks the moments, plans the graphics, renders each one. |
 | [`graphic-carousel`](skills/graphic-carousel) | Turns a topic or a video into a designed Instagram carousel — three house styles, brand palette and voice baked in, exported as post-ready 1080×1350 PNGs. Needs [open-carrusel](https://github.com/FrancescoXX/open-carrusel) for rendering. |

@@ -1,0 +1,143 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>__TITLE__</title>
+<style>
+  :root{--bg:#0d0f12;--dim:#4a525e;--hot:#f2f5f8;--accent:#5ee39a;--warn:#ffb454;--red:#ff5b5b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--hot);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;
+       height:100vh;display:flex;flex-direction:column;padding:22px 40px 26px;overflow:hidden}
+  header{display:flex;align-items:center;gap:26px;flex-wrap:wrap;border-bottom:1px solid #1e232b;padding-bottom:14px}
+  h1{font-size:14px;font-weight:600;letter-spacing:.02em;color:#8b95a3;margin-right:auto}
+  #clock{font-variant-numeric:tabular-nums;font-size:48px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  #clock.over{color:var(--red)}
+  #target{font-variant-numeric:tabular-nums;font-size:14px;color:#6b7684}
+  b{color:var(--warn);font-weight:600}
+  select{background:#161b22;color:#c9d3df;border:1px solid #2a313b;border-radius:7px;padding:7px 10px;font-size:13px;max-width:290px}
+  #rec{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.09em;
+       color:#5b6470;border:1px solid #2a313b;border-radius:999px;padding:7px 15px}
+  #rec .dot{width:11px;height:11px;border-radius:50%;background:#39414d}
+  #rec.live{color:var(--red);border-color:rgba(255,91,91,.55);background:rgba(255,91,91,.09)}
+  #rec.live .dot{background:var(--red);animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.25}}
+  #meter{width:190px;height:9px;background:#161b22;border-radius:5px;overflow:hidden;border:1px solid #232a34}
+  #lvl{height:100%;width:0;background:linear-gradient(90deg,var(--accent) 0 62%,var(--warn) 62% 85%,var(--red) 85%);
+       transition:width .05s linear}
+  #bar{height:5px;background:#1a1f27;border-radius:3px;margin:12px 0 2px;overflow:hidden;flex:none}
+  #fill{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+  #fill.over{background:var(--red)}
+  #lines{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;max-width:1150px;margin:0 auto;width:100%;
+         overflow-y:auto}
+  .l{font-size:27px;line-height:1.32;font-weight:500;color:var(--dim);padding:8px 0 8px 22px;
+     border-left:3px solid transparent;transition:color .18s,border-color .18s}
+  .l.on{color:var(--hot);border-left-color:var(--accent)}
+  .l.done{color:#2f3743}
+  .l .t{font-size:12px;font-variant-numeric:tabular-nums;color:#4b5563;margin-right:13px;font-weight:600}
+  .l.beat{font-size:18px;font-style:italic;color:#3a424e}
+  footer{border-top:1px solid #1e232b;padding-top:12px;font-size:13.5px;color:#6b7684;display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+  kbd{background:#1a1f27;border:1px solid #2a313b;border-radius:4px;padding:2px 7px;font:12px ui-monospace,monospace;color:#9aa5b1}
+  #status{margin-left:auto;font-weight:600}
+  #status.good{color:var(--accent)} #status.bad{color:var(--red)}
+</style></head><body>
+
+<header>
+  <h1>__TITLE__</h1>
+  <select id="dev" title="input device"></select>
+  <div id="meter"><div id="lvl"></div></div>
+  <div id="rec"><span class="dot"></span><span id="recTxt">READY</span></div>
+  <div id="clock">0.0<span style="font-size:20px;color:#4b5563">s</span></div>
+  <div id="target">target <b>__END__s</b></div>
+</header>
+<div id="bar"><div id="fill"></div></div>
+<div id="lines"></div>
+<footer>
+  <span><kbd>space</kbd> start recording + timer &nbsp;·&nbsp; <kbd>space</kbd> again to stop &amp; save</span>
+  <span><kbd>R</kbd> reset</span>
+  <span>Don't chase the highlight — a second or two of drift is fine.</span>
+  <span id="status">mic: connecting…</span>
+</footer>
+
+<script>
+const RAW=__LINES__, END=__END__;
+const LINES=RAW.map(r=>[r[0],r[1],r[2]]);
+const $=id=>document.getElementById(id);
+const wrap=$('lines');
+LINES.forEach(([t,txt,beat])=>{const d=document.createElement('div');
+  d.className='l'+(beat?' beat':'');
+  d.innerHTML=`<span class="t">${t.toFixed(1)}</span>${txt.replace(/</g,'&lt;')}`;wrap.appendChild(d);});
+const els=[...document.querySelectorAll('.l')];
+
+let stream=null,rec=null,chunks=[],t0=null,raf=null,recording=false,ac=null,an=null;
+function setStatus(m,c){ $('status').textContent=m; $('status').className=c||''; }
+
+async function initMic(deviceId){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  // MUST stay false — these are phone-call DSP and they wreck a good mic.
+  const c={audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,
+           channelCount:1,sampleRate:48000, ...(deviceId?{deviceId:{exact:deviceId}}:{})}};
+  stream=await navigator.mediaDevices.getUserMedia(c);
+  if(!ac){ac=new AudioContext();an=ac.createAnalyser();an.fftSize=1024;meter();}
+  ac.createMediaStreamSource(stream).connect(an);
+  if(ac.state==='suspended') ac.resume();
+  const lbl=stream.getAudioTracks()[0].label;
+  setStatus('mic: '+lbl,'good');
+  return lbl;
+}
+const buf=new Uint8Array(1024);
+function meter(){ an.getByteTimeDomainData(buf);
+  let pk=0; for(const v of buf) pk=Math.max(pk,Math.abs(v-128));
+  $('lvl').style.width=Math.min(100,(pk/128)*140)+'%'; requestAnimationFrame(meter); }
+async function listDevices(){
+  const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+  $('dev').innerHTML=ds.map(d=>`<option value="${d.deviceId}">${d.label||'input'}</option>`).join('');
+  // DJI first: a VO dropped into on-camera footage must match the A-roll mic.
+  // Austin 2026-09-23 — a fifine VO inside a DJI-shot video read as "so off" even
+  // when loudness-matched. fifine is the fallback for standalone reads only.
+  const order=[/dji/i,/fifine/i,/shure/i,/rode/i];
+  let pref=null;
+  for(const rx of order){ pref=ds.find(d=>rx.test(d.label)); if(pref) break; }
+  if(pref){ $('dev').value=pref.deviceId; await initMic(pref.deviceId); }
+}
+$('dev').onchange=e=>initMic(e.target.value);
+
+function frame(){
+  const e=(performance.now()-t0)/1000;
+  $('clock').innerHTML=e.toFixed(1)+'<span style="font-size:20px;color:#4b5563">s</span>';
+  $('clock').classList.toggle('over',e>END);
+  $('fill').style.width=Math.min(e/END,1)*100+'%'; $('fill').classList.toggle('over',e>END);
+  let cur=-1; LINES.forEach(([s],i)=>{if(e>=s)cur=i;});
+  els.forEach((el,i)=>{el.classList.toggle('on',i===cur);el.classList.toggle('done',i<cur);});
+  if(els[cur]) els[cur].scrollIntoView({block:'nearest',behavior:'smooth'});
+  raf=requestAnimationFrame(frame);
+}
+function start(){
+  if(!stream){setStatus('no mic — pick one above','bad');return;}
+  chunks=[];
+  const mt=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'';
+  rec=new MediaRecorder(stream,mt?{mimeType:mt,audioBitsPerSecond:192000}:{});
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  rec.onstop=save; rec.start();
+  recording=true; $('rec').classList.add('live'); $('recTxt').textContent='RECORDING';
+  t0=performance.now(); raf=requestAnimationFrame(frame);
+}
+function stop(){ recording=false; cancelAnimationFrame(raf);
+  $('rec').classList.remove('live'); $('recTxt').textContent='SAVING…';
+  if(rec&&rec.state!=='inactive') rec.stop(); }
+function save(){
+  const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});
+  const ext=(rec.mimeType||'').includes('mp4')?'mp4':'webm';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`vo-take.${ext}`; a.click();
+  $('recTxt').textContent='SAVED';
+  setStatus(`saved vo-take.${ext} → Downloads (${(blob.size/1024).toFixed(0)} KB)`,'good');
+}
+function reset(){ if(recording) stop(); cancelAnimationFrame(raf);
+  $('clock').innerHTML='0.0<span style="font-size:20px;color:#4b5563">s</span>';
+  $('clock').classList.remove('over'); $('fill').style.width='0'; $('fill').classList.remove('over');
+  $('recTxt').textContent='READY'; $('rec').classList.remove('live');
+  els.forEach(el=>el.classList.remove('on','done')); }
+addEventListener('keydown',ev=>{
+  if(ev.code==='Space'){ev.preventDefault(); recording?stop():start();}
+  if(ev.key.toLowerCase()==='r') reset(); });
+(async()=>{ try{ await initMic(); await listDevices(); }
+  catch(err){ setStatus('mic blocked — allow microphone for localhost, then reload','bad'); } })();
+</script>
+</body></html>
